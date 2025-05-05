@@ -1,6 +1,6 @@
 import dinostore/ulid
 import gleam/dynamic
-import gleam/result
+import gleam/dynamic/decode
 
 pub type KeyPart {
   StringPart(value: String)
@@ -12,7 +12,7 @@ pub type KeyPart {
 
 /// A key is simply a list of `KeyPart`s.
 pub type Key =
-  List(KeyPart)
+List(KeyPart)
 
 /// Helper function to create a `StringPart`.
 pub fn s(s: String) -> KeyPart {
@@ -64,12 +64,16 @@ pub fn unwrap(key: Key) -> JsKey
 /// [secondary indexes](https://docs.deno.com/deploy/kv/manual/#improve-querying-with-secondary-indexes)
 /// where a primary key is stored as a secondary index's value.
 ///
-pub fn decode(x: dynamic.Dynamic) {
-  dynamic.list(
-    of: dynamic.any(of: [
-      fn(x) { result.map(dynamic.string(x), StringPart) },
-      fn(x) { result.map(dynamic.float(x), NumberPart) },
-      fn(x) { result.map(dynamic.bool(x), BoolPart) },
-    ]),
-  )(x)
+pub fn decode(
+x: dynamic.Dynamic,
+) -> Result(List(KeyPart), List(decode.DecodeError)) {
+  decode.run(
+  x,
+  decode.list(
+  of: decode.one_of(decode.string |> decode.map(StringPart), or: [
+  decode.float |> decode.map(NumberPart),
+  decode.bool |> decode.map(BoolPart),
+  ]),
+  ),
+  )
 }

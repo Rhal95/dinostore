@@ -10,8 +10,8 @@ runtime = "deno"
 typescript_declarations = true
 
 [dependencies]
-gleam_stdlib = ">= 0.34.0 and < 2.0.0"
-gleam_javascript = ">= 0.12.0 and < 1.0.0"
+gleam_stdlib = ">= 0.59.0 and < 1.0.0"
+gleam_javascript = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"

@@ -2,7 +2,8 @@ import dinostore/atomic
 import dinostore/key
 import dinostore/kv
 import gleam/bool
-import gleam/dynamic
+import gleam/dynamic/decode
+import gleam/float
 import gleam/io
 import gleam/javascript/promise.{type Promise}
 import gleam/list
@@ -17,13 +18,21 @@ pub fn main() {
 
   io.println("Original funds:")
   use users <- promise.await(list_users(conn))
-  list.each(users, io.debug)
+  list.each(users, fn(user) {
+    io.print(user.0)
+    io.print(":\t")
+    io.println(float.to_string(user.1))
+  })
 
   use _ <- promise.await(transfer_funds(conn, "bob", "alice", 10.0))
 
   io.println("Funds after transfer:")
   use users <- promise.await(list_users(conn))
-  list.each(users, io.debug)
+  list.each(users, fn(user) {
+    io.print(user.0)
+    io.print(":\t")
+    io.println(float.to_string(user.1))
+  })
 
   promise.resolve(Nil)
 }
@@ -53,7 +62,7 @@ fn list_users(conn: kv.Connection) -> Promise(List(#(String, Float))) {
   ))
 
   list.map(entries, fn(entry) {
-    let assert Ok(balance) = dynamic.float(entry.value)
+    let assert Ok(balance) = decode.run(entry.value, decode.float)
     let assert Ok(key.StringPart(name)) = list.last(entry.key)
     #(name, balance)
   })
@@ -83,8 +92,9 @@ fn transfer_funds(
   use sender_entry <- promise.try_await(get_account(conn, sender_key))
   use receiver_entry <- promise.try_await(get_account(conn, receiver_key))
 
-  let assert Ok(sender_balance) = dynamic.float(sender_entry.value)
-  let assert Ok(receiver_balance) = dynamic.float(receiver_entry.value)
+  let assert Ok(sender_balance) = decode.run(sender_entry.value, decode.float)
+  let assert Ok(receiver_balance) =
+    decode.run(receiver_entry.value, decode.float)
 
   use <- bool.guard(
     when: sender_balance <. amount,
